@@ -4,6 +4,9 @@ export interface StoryNode {
   label: string;
   x: number;
   y: number;
+  description?: string;
+  badge?: string;
+  color?: string;
 }
 
 export interface Connection {
