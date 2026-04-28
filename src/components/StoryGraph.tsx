@@ -37,7 +37,7 @@ const splitLabel = (value: string, maxChars = 16, maxLines = 2) => {
   const words = value.trim().split(/\s+/).filter(Boolean);
 
   if (!words.length) {
-    return ["مرحله بدون عنوان"];
+    return ["Untitled step"];
   }
 
   const lines: string[] = [];
@@ -72,7 +72,7 @@ const splitLabel = (value: string, maxChars = 16, maxLines = 2) => {
 };
 
 const getPreview = (value?: string) => {
-  if (!value?.trim()) return "برای این مرحله توضیحی ثبت نشده";
+  if (!value?.trim()) return "No description saved";
   return value.length > 44 ? `${value.slice(0, 44)}…` : value;
 };
 
@@ -561,9 +561,12 @@ const StoryGraph: React.FC<Props> = ({
           top: 16,
           left: 16,
           zIndex: 3,
-          p: 1,
-          borderRadius: 5,
-          minWidth: 160,
+          p: 1.25,
+          borderRadius: "12px",
+          width: 220,
+          maxWidth: "calc(100% - 32px)",
+          boxSizing: "border-box",
+          overflow: "hidden",
           backgroundColor:
             theme.palette.mode === "dark"
               ? "rgba(15, 23, 42, 0.78)"
@@ -588,30 +591,39 @@ const StoryGraph: React.FC<Props> = ({
           </Box>
 
           <Stack direction="row" spacing={0.75}>
-            <Tooltip title="کوچک‌نمایی">
+            <Tooltip title="Zoom out">
               <IconButton size="small" onClick={() => zoomBy(0.8)}>
                 <RemoveRounded fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="بزرگ‌نمایی">
+            <Tooltip title="Zoom in">
               <IconButton size="small" onClick={() => zoomBy(1.25)}>
                 <AddRounded fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="نمای متناسب با محتوا">
+            <Tooltip title="Fit to content">
               <IconButton size="small" onClick={fitToView}>
                 <CenterFocusStrongRounded fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="بازنشانی نما">
+            <Tooltip title="Reset view">
               <IconButton size="small" onClick={resetView}>
                 <RestartAltRounded fontSize="small" />
               </IconButton>
             </Tooltip>
           </Stack>
 
-          <Typography variant="caption" sx={{ color: "text.secondary", lineHeight: 1.8 }}>
-            با اسکرول یا این کنترل‌ها، بوم را برای استوری‌لاین‌های بزرگ کوچک و بزرگ کن.
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.5,
+              display: "block",
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+            }}
+          >
+            Use scroll or these controls to zoom and navigate large storylines.
           </Typography>
         </Stack>
       </Paper>

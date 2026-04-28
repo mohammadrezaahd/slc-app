@@ -11,22 +11,55 @@ import {
   Stack,
   Typography,
   Chip,
+  Tooltip,
 } from "@mui/material";
-import { CloseRounded, NotesRounded } from "@mui/icons-material";
+import {
+  CloseRounded,
+  ChevronLeftRounded,
+  ChevronRightRounded,
+  NotesRounded,
+  TuneRounded,
+} from "@mui/icons-material";
 import StoryGraph from "./components/StoryGraph";
 import NodeEditor from "./components/NodeEditor";
 import type { StoryNode, Connection } from "./types";
 import Navbar from "./components/Navbar";
+
+type CanvasSnapshot = {
+  version: number;
+  exportedAt: string;
+  nodes: StoryNode[];
+  connections: Connection[];
+};
+
+const isValidStoryNode = (value: unknown): value is StoryNode => {
+  if (!value || typeof value !== "object") return false;
+  const node = value as Record<string, unknown>;
+  return (
+    typeof node.id === "string" &&
+    typeof node.label === "string" &&
+    typeof node.x === "number" &&
+    typeof node.y === "number"
+  );
+};
+
+const isValidConnection = (value: unknown): value is Connection => {
+  if (!value || typeof value !== "object") return false;
+  const connection = value as Record<string, unknown>;
+  return (
+    typeof connection.from === "string" && typeof connection.to === "string"
+  );
+};
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<"light" | "dark">("dark");
   const [nodes, setNodes] = useState<StoryNode[]>([
     {
       id: "node-1",
-      label: "شروع داستان",
+      label: "Story Start",
       badge: "Entry",
       description:
-        "این نقطه شروع جریان داستان است. از اینجا می‌توانی شاخه‌های مختلف روایت را بسازی و برای هر مرحله توضیح مستقل داشته باشی.",
+        "This is the start of your story flow. From here, you can branch your narrative and keep a dedicated description for each step.",
       color: "#8b5cf6",
       x: 400,
       y: 300,
@@ -35,6 +68,7 @@ const App: React.FC = () => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [detailNodeId, setDetailNodeId] = useState<string | null>(null);
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
 
   const theme = useMemo(
     () =>
@@ -53,10 +87,10 @@ const App: React.FC = () => {
           },
         },
         typography: {
-          fontFamily: 'Vazir, "Segoe UI", Roboto, sans-serif',
+          fontFamily: 'Inter, "Segoe UI", Roboto, sans-serif',
         },
         shape: { borderRadius: 24 },
-        direction: "rtl",
+        direction: "ltr",
         components: {
           MuiPaper: {
             styleOverrides: {
@@ -116,7 +150,7 @@ const App: React.FC = () => {
       const parentNode = nodes.find((n) => n.id === parentId);
       const newNode: StoryNode = {
         id: `node-${Date.now()}`,
-        label: label || `مرحله ${nodes.length + 1}`,
+        label: label || `Step ${nodes.length + 1}`,
         badge: `Node ${nodes.length + 1}`,
         description: "",
         color: parentNode?.color || "#22c55e",
@@ -168,6 +202,64 @@ const App: React.FC = () => {
   const toggleTheme = () =>
     setMode((prev) => (prev === "light" ? "dark" : "light"));
 
+  const handleExportCanvas = useCallback(() => {
+    const snapshot: CanvasSnapshot = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      nodes,
+      connections,
+    };
+
+    const json = JSON.stringify(snapshot, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    link.href = url;
+    link.download = `story-flow-canvas-${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, [connections, nodes]);
+
+  const handleImportCanvas = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as Partial<CanvasSnapshot>;
+
+      if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.connections)) {
+        throw new Error("Invalid canvas file format.");
+      }
+
+      const importedNodes = parsed.nodes.filter(isValidStoryNode);
+      const importedConnections = parsed.connections.filter(isValidConnection);
+
+      if (importedNodes.length !== parsed.nodes.length) {
+        throw new Error("Some imported nodes are invalid.");
+      }
+
+      if (importedConnections.length !== parsed.connections.length) {
+        throw new Error("Some imported connections are invalid.");
+      }
+
+      const nodeIds = new Set(importedNodes.map((node) => node.id));
+      const normalizedConnections = importedConnections.filter(
+        (connection) =>
+          nodeIds.has(connection.from) && nodeIds.has(connection.to),
+      );
+
+      setNodes(importedNodes);
+      setConnections(normalizedConnections);
+      setSelectedNodeId(null);
+      setDetailNodeId(null);
+    } catch (error) {
+      console.error("Import failed:", error);
+      window.alert("The selected file is not a valid canvas export.");
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -188,42 +280,160 @@ const App: React.FC = () => {
           onToggleTheme={toggleTheme}
           nodesCount={nodes.length}
           connectionsCount={connections.length}
+          onExportCanvas={handleExportCanvas}
+          onImportCanvas={handleImportCanvas}
         />
         <Box
           sx={{
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              lg: "minmax(320px, 380px) minmax(0, 1fr)",
+              lg: isEditorCollapsed
+                ? "72px minmax(0, 1fr)"
+                : "minmax(330px, 390px) minmax(0, 1fr)",
             },
-            gap: 2.5,
+            gridTemplateRows: {
+              xs: "auto minmax(0, 1fr)",
+              lg: "1fr",
+            },
+            transition: "grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+            gap: { xs: 1.5, md: 2.5 },
             flex: 1,
             minHeight: 0,
-            p: { xs: 1.5, md: 2.5 },
+            p: { xs: 1, md: 2.5 },
           }}
         >
           <Box
             sx={{
               minWidth: 0,
               minHeight: 0,
-              overflow: "auto",
-              borderRadius: 8,
+              overflow: "hidden",
+              borderRadius: { xs: "14px", md: "18px" },
               bgcolor: "background.paper",
+              transition: "all 0.24s ease",
+              position: "relative",
+              /* on mobile cap height so canvas still shows */
+              maxHeight: { xs: "42vh", lg: "unset" },
             }}
           >
-            <NodeEditor
-              selectedNode={selectedNode}
-              nodes={nodes}
-              onUpdateNode={updateNode}
-              onAddChild={(label) =>
-                selectedNodeId && addNode(selectedNodeId, label)
-              }
-              onConnectTo={(targetId) =>
-                selectedNodeId && addConnection(selectedNodeId, targetId)
-              }
-              onDeleteNode={() => selectedNodeId && deleteNode(selectedNodeId)}
-              onOpenDescription={(nodeId) => setDetailNodeId(nodeId)}
-            />
+            {/* collapse toggle — desktop only */}
+            <Tooltip title={isEditorCollapsed ? "Expand editor" : "Collapse editor"}>
+              <IconButton
+                size="small"
+                onClick={() => setIsEditorCollapsed((prev) => !prev)}
+                aria-label={isEditorCollapsed ? "Expand node editor" : "Collapse node editor"}
+                sx={{
+                  display: { xs: "none", lg: "inline-flex" },
+                  position: "absolute",
+                  top: 14,
+                  right: 12,
+                  zIndex: 4,
+                  bgcolor: "background.default",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  "&:hover": { bgcolor: "action.hover" },
+                }}
+              >
+                {isEditorCollapsed ? (
+                  <ChevronRightRounded fontSize="small" />
+                ) : (
+                  <ChevronLeftRounded fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                overflowY: "auto",
+                overflowX: "hidden",
+                direction: "rtl",
+                "& > *": { direction: "ltr" },
+                "&::-webkit-scrollbar": { width: 8 },
+                "&::-webkit-scrollbar-track": {
+                  background: "transparent",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  background: "rgba(148, 163, 184, 0.35)",
+                  borderRadius: 8,
+                  border: "2px solid transparent",
+                  backgroundClip: "padding-box",
+                },
+                "&::-webkit-scrollbar-thumb:hover": {
+                  background: "rgba(99, 102, 241, 0.55)",
+                  backgroundClip: "padding-box",
+                },
+                scrollbarWidth: "thin",
+                scrollbarColor: "rgba(148, 163, 184, 0.35) transparent",
+                /* on mobile always visible; desktop follows collapsed state */
+                opacity: { xs: 1, lg: isEditorCollapsed ? 0 : 1 },
+                transform: {
+                  xs: "none",
+                  lg: isEditorCollapsed ? "translateX(-14px)" : "translateX(0)",
+                },
+                transition: "opacity 220ms ease, transform 260ms ease",
+                pointerEvents: {
+                  xs: "auto",
+                  lg: isEditorCollapsed ? "none" : "auto",
+                },
+                pt: { xs: 1, lg: 4.5 },
+              }}
+            >
+              <Box>
+                <NodeEditor
+                  selectedNode={selectedNode}
+                  nodes={nodes}
+                  onUpdateNode={updateNode}
+                  onAddChild={(label) =>
+                    selectedNodeId && addNode(selectedNodeId, label)
+                  }
+                  onConnectTo={(targetId) =>
+                    selectedNodeId && addConnection(selectedNodeId, targetId)
+                  }
+                  onDeleteNode={() => selectedNodeId && deleteNode(selectedNodeId)}
+                  onOpenDescription={(nodeId) => setDetailNodeId(nodeId)}
+                />
+              </Box>
+            </Box>
+
+            <Stack
+              alignItems="center"
+              justifyContent="center"
+              spacing={1}
+              sx={{
+                display: { xs: "none", lg: "flex" },
+                px: 0.75,
+                py: 2,
+                color: "text.secondary",
+                height: "100%",
+                opacity: isEditorCollapsed ? 1 : 0,
+                transform: isEditorCollapsed ? "translateX(0)" : "translateX(-10px)",
+                transition: "opacity 220ms ease, transform 260ms ease",
+                pointerEvents: isEditorCollapsed ? "auto" : "none",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "10px",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "action.hover",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <TuneRounded color="primary" />
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{ textAlign: "center", fontWeight: 700, letterSpacing: 0.3 }}
+              >
+                Edit
+              </Typography>
+            </Stack>
           </Box>
           <Box
             sx={{
@@ -231,7 +441,7 @@ const App: React.FC = () => {
               minHeight: 0,
               position: "relative",
               bgcolor: "background.paper",
-              borderRadius: 8,
+              borderRadius: { xs: "14px", md: "18px" },
               overflow: "hidden",
             }}
           >
@@ -287,7 +497,7 @@ const App: React.FC = () => {
                         <Chip
                           size="small"
                           icon={<NotesRounded />}
-                          label="جزئیات مرحله"
+                          label="Step details"
                           variant="outlined"
                         />
                       </Stack>
@@ -322,7 +532,7 @@ const App: React.FC = () => {
                     }}
                   >
                     {detailNode.description?.trim() ||
-                      "برای این مرحله هنوز توضیحی ثبت نشده است."}
+                      "No description has been saved for this step yet."}
                   </Typography>
                 </Box>
               </DialogContent>

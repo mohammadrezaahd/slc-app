@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Paper,
   Typography,
   TextField,
   Button,
@@ -77,7 +76,7 @@ const NodeEditor: React.FC<Props> = ({
   const handleSaveMeta = () => {
     if (selectedNode) {
       onUpdateNode(selectedNode.id, {
-        label: editLabel.trim() || "مرحله بدون عنوان",
+        label: editLabel.trim() || "Untitled step",
         badge: editBadge.trim(),
       });
     }
@@ -93,7 +92,7 @@ const NodeEditor: React.FC<Props> = ({
 
   const handleAddChild = () => {
     if (selectedNode) {
-      onAddChild(childLabel.trim() || `مرحله جدید`);
+      onAddChild(childLabel.trim() || "New step");
       setChildLabel("");
     }
   };
@@ -112,14 +111,14 @@ const NodeEditor: React.FC<Props> = ({
   if (!selectedNode) {
     return (
       <Fade in={true}>
-        <Box sx={{ p: { xs: 2, md: 3 }, minWidth: 0 }}>
-          <Paper
-            elevation={0}
+        <Box sx={{ p: { xs: 2, md: 3 }, minWidth: 0, textAlign: "center" }}>
+          <Box
             sx={{
-              p: 4,
-              textAlign: "center",
-              borderRadius: 6,
-              bgcolor: "background.paper",
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "transparent",
               minWidth: 0,
             }}
           >
@@ -127,39 +126,39 @@ const NodeEditor: React.FC<Props> = ({
               sx={{ fontSize: 64, color: "primary.main", mb: 2, opacity: 0.8 }}
             />
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 800 }}>
-              پنل کنترل داستان
+              Story control panel
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
-              یک گره را از روی بوم انتخاب کن تا رنگ، توضیح، لیبل و ارتباطاتش را مدیریت کنی.
+              Select a node on the canvas to manage its color, description, label, and connections.
             </Typography>
             <Divider sx={{ my: 3 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-              قابلیت‌های جدید
+              Available features
             </Typography>
             <Stack
               spacing={1.25}
-              sx={{ textAlign: "right", fontSize: 13, color: "text.secondary" }}
+              sx={{ textAlign: "left", fontSize: 13, color: "text.secondary" }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Chip
-                  label="رنگ"
+                  label="Color"
                   size="small"
                   color="primary"
                   variant="outlined"
                 />
                 <Typography variant="body2">
-                  انتخاب رنگ سفارشی برای هر گره با پالت آماده
+                  Pick a custom color for every node from a quick palette.
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Chip
-                  label="شرح"
+                  label="Details"
                   size="small"
                   color="secondary"
                   variant="outlined"
                 />
                 <Typography variant="body2">
-                  افزودن توضیح و باز کردن آن در نمای مستقل
+                  Add a description and open it in a focused details view.
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -170,7 +169,7 @@ const NodeEditor: React.FC<Props> = ({
                   variant="outlined"
                 />
                 <Typography variant="body2">
-                  تعریف لیبل کوتاه برای دسته‌بندی هر مرحله
+                  Add short labels to organize each step.
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -181,11 +180,11 @@ const NodeEditor: React.FC<Props> = ({
                   variant="outlined"
                 />
                 <Typography variant="body2">
-                  جابجایی گره‌ها، زوم و پن نرم روی بوم
+                  Drag nodes with smooth zoom and pan on the canvas.
                 </Typography>
               </Box>
             </Stack>
-          </Paper>
+          </Box>
         </Box>
       </Fade>
     );
@@ -196,10 +195,7 @@ const NodeEditor: React.FC<Props> = ({
   return (
     <Fade in={true}>
       <Box sx={{ p: { xs: 2, md: 3 }, minWidth: 0 }}>
-        <Paper
-          elevation={0}
-          sx={{ p: { xs: 2, md: 3 }, borderRadius: 6, bgcolor: "background.paper", minWidth: 0 }}
-        >
+        <Box sx={{ p: { xs: 1.5, md: 2 }, minWidth: 0 }}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1.5}
@@ -218,7 +214,7 @@ const NodeEditor: React.FC<Props> = ({
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
               <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                ویرایش مرحله انتخاب‌شده
+                Edit selected step
               </Typography>
               <Stack
                 direction="row"
@@ -227,7 +223,7 @@ const NodeEditor: React.FC<Props> = ({
                 sx={{ mt: 0.75, flexWrap: "wrap", minWidth: 0 }}
               >
                 <Chip
-                  label={selectedNode.badge?.trim() || "بدون لیبل"}
+                  label={selectedNode.badge?.trim() || "No label"}
                   size="small"
                   sx={{ maxWidth: "100%" }}
                 />
@@ -244,7 +240,7 @@ const NodeEditor: React.FC<Props> = ({
 
           <TextField
             fullWidth
-            label="عنوان گره"
+            label="Step title"
             value={editLabel}
             onChange={(e) => setEditLabel(e.target.value)}
             onBlur={handleSaveMeta}
@@ -261,7 +257,7 @@ const NodeEditor: React.FC<Props> = ({
                   (editLabel !== selectedNode.label ||
                     editBadge !== (selectedNode.badge ?? "")) &&
                   editLabel.trim() ? (
-                    <Tooltip title="ذخیره">
+                    <Tooltip title="Save">
                       <IconButton
                         size="small"
                         onClick={handleSaveMeta}
@@ -277,7 +273,7 @@ const NodeEditor: React.FC<Props> = ({
 
           <TextField
             fullWidth
-            label="Label / برچسب"
+            label="Label"
             value={editBadge}
             onChange={(e) => setEditBadge(e.target.value)}
             onBlur={handleSaveMeta}
@@ -296,7 +292,7 @@ const NodeEditor: React.FC<Props> = ({
           <Box
             sx={{
               p: 2,
-              borderRadius: 4,
+              borderRadius: "12px",
               border: "1px solid",
               borderColor: "divider",
               background:
@@ -307,7 +303,7 @@ const NodeEditor: React.FC<Props> = ({
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
               <PaletteOutlined sx={{ color: "primary.main" }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                رنگ گره
+                Node color
               </Typography>
             </Stack>
 
@@ -338,7 +334,7 @@ const NodeEditor: React.FC<Props> = ({
               <Box
                 component="input"
                 type="color"
-                aria-label="انتخاب رنگ گره"
+                aria-label="Pick node color"
                 value={selectedNode.color || "#6366f1"}
                 onChange={(e) => onUpdateNode(selectedNode.id, { color: e.target.value })}
                 sx={{
@@ -358,7 +354,7 @@ const NodeEditor: React.FC<Props> = ({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <NotesRounded sx={{ fontSize: 20, color: "secondary.main" }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              توضیحات مرحله
+              Step description
             </Typography>
           </Box>
 
@@ -367,7 +363,7 @@ const NodeEditor: React.FC<Props> = ({
             multiline
             minRows={4}
             maxRows={8}
-            placeholder="جزئیات، دیالوگ، شرط‌ها یا نکته‌های این مرحله را بنویس..."
+            placeholder="Write details, dialog, conditions, or notes for this step..."
             value={editDescription}
             onChange={(e) => setEditDescription(e.target.value)}
             sx={{ mb: 1.5 }}
@@ -384,7 +380,7 @@ const NodeEditor: React.FC<Props> = ({
               startIcon={<NotesRounded />}
               fullWidth
             >
-              ذخیره توضیحات
+              Save description
             </Button>
             <Button
               variant="outlined"
@@ -392,21 +388,21 @@ const NodeEditor: React.FC<Props> = ({
               startIcon={<InfoOutlined />}
               fullWidth
             >
-              باز کردن توضیحات
+              Open details
             </Button>
           </Stack>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <Add sx={{ fontSize: 20, color: "success.main" }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              افزودن مرحله جدید
+              Add new step
             </Typography>
           </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
             <TextField
               fullWidth
-              placeholder="نام مرحله بعدی..."
+              placeholder="Next step name..."
               value={childLabel}
               onChange={(e) => setChildLabel(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddChild()}
@@ -418,26 +414,26 @@ const NodeEditor: React.FC<Props> = ({
               sx={{ whiteSpace: "nowrap" }}
               fullWidth
             >
-              ایجاد
+              Create
             </Button>
           </Stack>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <Link sx={{ fontSize: 20, color: "secondary.main" }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              اتصال به مرحله دیگر
+              Connect to another step
             </Typography>
           </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>انتخاب مرحله مقصد</InputLabel>
+              <InputLabel>Select target step</InputLabel>
               <Select
                 value={selectedTargetId}
                 onChange={(e) => setSelectedTargetId(e.target.value)}
-                label="انتخاب مرحله مقصد"
+                label="Select target step"
               >
-                <MenuItem value="">انتخاب کنید...</MenuItem>
+                <MenuItem value="">Select...</MenuItem>
                 {otherNodes.map((node) => (
                   <MenuItem key={node.id} value={node.id}>
                     {node.label}
@@ -454,12 +450,12 @@ const NodeEditor: React.FC<Props> = ({
               startIcon={<Link />}
               fullWidth
             >
-              اتصال
+              Connect
             </Button>
           </Stack>
 
           <Alert severity="info" sx={{ mb: 3, fontSize: 12, borderRadius: 3 }}>
-            <strong>نکته:</strong> برای هر گره می‌توانی یک لیبل کوتاه و یک توضیح کامل ثبت کنی تا روی بوم هم خواناتر شود.
+            <strong>Tip:</strong> Add a short label and a full description for each node to keep the canvas easier to scan.
           </Alert>
 
           <Divider sx={{ my: 2 }} />
@@ -477,7 +473,7 @@ const NodeEditor: React.FC<Props> = ({
           >
             <AutoAwesome sx={{ color: "warning.main" }} />
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              پیش‌نمایش فعلی: <strong>{editLabel || "مرحله بدون عنوان"}</strong>
+              Current preview: <strong>{editLabel || "Untitled step"}</strong>
             </Typography>
           </Box>
 
@@ -489,9 +485,9 @@ const NodeEditor: React.FC<Props> = ({
             onClick={onDeleteNode}
             sx={{ mt: 1 }}
           >
-            حذف این مرحله
+            Delete this step
           </Button>
-        </Paper>
+        </Box>
       </Box>
     </Fade>
   );
