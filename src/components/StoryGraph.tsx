@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import * as d3 from "d3";
 import type { StoryNode, Connection } from "../types";
 import {
@@ -25,6 +25,11 @@ interface Props {
   onNodeTap: (nodeId: string) => void;
   onUpdatePosition: (nodeId: string, x: number, y: number) => void;
   onOpenDescription: (nodeId: string) => void;
+}
+
+export interface StoryGraphHandle {
+  fitToView: () => void;
+  exportAsPdf: (title?: string) => void;
 }
 
 type D3ZoomEvent = d3.D3ZoomEvent<SVGSVGElement, unknown>;
@@ -98,7 +103,7 @@ const getRectIntersection = (
   };
 };
 
-const StoryGraph: React.FC<Props> = ({
+const StoryGraph = forwardRef<StoryGraphHandle, Props>(function StoryGraph({
   nodes,
   connections,
   selectedNodeId,
@@ -106,7 +111,7 @@ const StoryGraph: React.FC<Props> = ({
   onNodeTap,
   onUpdatePosition,
   onOpenDescription,
-}) => {
+}, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<Record<string, { x: number; y: number; time: number }>>({});
@@ -178,6 +183,39 @@ const StoryGraph: React.FC<Props> = ({
       .duration(260)
       .call(zoomBehaviorRef.current.transform, transform);
   }, [nodes]);
+
+  useImperativeHandle(ref, () => ({
+    fitToView,
+    exportAsPdf: (title = "story-flow-canvas") => {
+      if (!svgRef.current) return;
+      const svgEl = svgRef.current;
+      const { width, height } = svgEl.getBoundingClientRect();
+      const serializer = new XMLSerializer();
+      const svgClone = svgEl.cloneNode(true) as SVGSVGElement;
+      svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      svgClone.setAttribute("width", String(width));
+      svgClone.setAttribute("height", String(height));
+      const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      bgRect.setAttribute("width", "100%");
+      bgRect.setAttribute("height", "100%");
+      bgRect.setAttribute("fill", theme.palette.mode === "dark" ? "#050816" : "#eef4ff");
+      svgClone.insertBefore(bgRect, svgClone.firstChild);
+      const svgString = serializer.serializeToString(svgClone);
+      const printWin = window.open("", "_blank");
+      if (!printWin) return;
+      printWin.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: ${theme.palette.mode === "dark" ? "#050816" : "#eef4ff"}; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+        @media print { body { margin: 0; } img { width: 100%; height: auto; page-break-inside: avoid; } }
+      </style></head><body>`);
+      const blob = new Blob([svgString], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      printWin.document.write(`<img src="${url}" onload="window.print();URL.revokeObjectURL('${url}')" />`);
+      printWin.document.write(`</body></html>`);
+      printWin.document.close();
+    },
+  }), [fitToView, theme]);
 
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
@@ -678,6 +716,6 @@ const StoryGraph: React.FC<Props> = ({
       />
     </Box>
   );
-};
+});
 
 export default StoryGraph;

@@ -1,15 +1,18 @@
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   ThemeProvider,
   createTheme,
   CssBaseline,
   Box,
+  Button,
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogActions,
   Drawer,
   IconButton,
   Stack,
+  TextField,
   Typography,
   Chip,
   Tooltip,
@@ -20,8 +23,10 @@ import {
   ChevronRightRounded,
   NotesRounded,
   TuneRounded,
+  DownloadRounded,
+  PictureAsPdfRounded,
 } from "@mui/icons-material";
-import StoryGraph from "./components/StoryGraph";
+import StoryGraph, { type StoryGraphHandle } from "./components/StoryGraph";
 import NodeEditor from "./components/NodeEditor";
 import type { StoryNode, Connection } from "./types";
 import Navbar from "./components/Navbar";
@@ -54,6 +59,7 @@ const isValidConnection = (value: unknown): value is Connection => {
 
 const App: React.FC = () => {
   const mobileEditorCloseGuardUntilRef = useRef<number>(0);
+  const graphRef = useRef<StoryGraphHandle>(null);
   const [mode, setMode] = useState<"light" | "dark">("dark");
   const [nodes, setNodes] = useState<StoryNode[]>([
     {
@@ -72,6 +78,8 @@ const App: React.FC = () => {
   const [detailNodeId, setDetailNodeId] = useState<string | null>(null);
   const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFileName, setExportFileName] = useState("story-flow-canvas");
 
   const theme = useMemo(
     () =>
@@ -208,6 +216,12 @@ const App: React.FC = () => {
   const toggleTheme = () =>
     setMode((prev) => (prev === "light" ? "dark" : "light"));
 
+  // Auto-fit view on first render
+  useEffect(() => {
+    const timer = setTimeout(() => graphRef.current?.fitToView(), 320);
+    return () => clearTimeout(timer);
+  }, []);
+
   const openMobileEditor = useCallback(() => {
     mobileEditorCloseGuardUntilRef.current = Date.now() + 280;
     setIsMobileEditorOpen(true);
@@ -225,26 +239,34 @@ const App: React.FC = () => {
   }, [openMobileEditor]);
 
   const handleExportCanvas = useCallback(() => {
+    setExportFileName("story-flow-canvas");
+    setExportModalOpen(true);
+  }, []);
+
+  const handleDownloadJSON = useCallback((filename: string) => {
     const snapshot: CanvasSnapshot = {
       version: 1,
       exportedAt: new Date().toISOString(),
       nodes,
       connections,
     };
-
     const json = JSON.stringify(snapshot, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-
     link.href = url;
-    link.download = `story-flow-canvas-${timestamp}.json`;
+    link.download = `${filename || "story-flow-canvas"}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+    setExportModalOpen(false);
   }, [connections, nodes]);
+
+  const handleExportPDF = useCallback((filename: string) => {
+    graphRef.current?.exportAsPdf(filename || "story-flow-canvas");
+    setExportModalOpen(false);
+  }, []);
 
   const handleImportCanvas = useCallback(async (file: File) => {
     try {
@@ -276,6 +298,8 @@ const App: React.FC = () => {
       setConnections(normalizedConnections);
       setSelectedNodeId(null);
       setDetailNodeId(null);
+      // Re-center canvas after import
+      setTimeout(() => graphRef.current?.fitToView(), 120);
     } catch (error) {
       console.error("Import failed:", error);
       window.alert("The selected file is not a valid canvas export.");
@@ -487,6 +511,7 @@ const App: React.FC = () => {
             }}
           >
             <StoryGraph
+              ref={graphRef}
               nodes={nodes}
               connections={connections}
               selectedNodeId={selectedNodeId}
@@ -497,6 +522,53 @@ const App: React.FC = () => {
             />
           </Box>
         </Box>
+
+        <Dialog
+          open={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                Export Canvas
+              </Typography>
+              <IconButton size="small" onClick={() => setExportModalOpen(false)}>
+                <CloseRounded fontSize="small" />
+              </IconButton>
+            </Stack>
+          </DialogTitle>
+          <DialogContent sx={{ pt: "8px !important" }}>
+            <TextField
+              fullWidth
+              label="File name"
+              value={exportFileName}
+              onChange={(e) => setExportFileName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleDownloadJSON(exportFileName)}
+              autoFocus
+              size="small"
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<PictureAsPdfRounded />}
+              onClick={() => handleExportPDF(exportFileName)}
+              sx={{ flex: 1 }}
+            >
+              Save as PDF
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<DownloadRounded />}
+              onClick={() => handleDownloadJSON(exportFileName)}
+              sx={{ flex: 1 }}
+            >
+              Export JSON
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Drawer
           anchor="bottom"

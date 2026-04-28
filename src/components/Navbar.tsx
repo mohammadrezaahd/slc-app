@@ -152,7 +152,7 @@ const Navbar: React.FC<Props> = ({
             </Tooltip>
             <Tooltip title="Import canvas">
               <IconButton size="small" onClick={handleImportClick} sx={{ borderRadius: "8px" }}>
-                <UploadRounded fontSize="small" />
+                <DownloadRounded fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Node settings">
@@ -167,7 +167,7 @@ const Navbar: React.FC<Props> = ({
                 color="primary"
                 sx={{ borderRadius: "8px" }}
               >
-                <DownloadRounded fontSize="small" />
+                <UploadRounded fontSize="small" />
               </IconButton>
             </Tooltip>
           </Stack>
@@ -263,7 +263,7 @@ const Navbar: React.FC<Props> = ({
             <Button
               size="small"
               variant="outlined"
-              startIcon={<UploadRounded />}
+              startIcon={<DownloadRounded />}
               onClick={handleImportClick}
               sx={{ height: 32, borderRadius: "9px" }}
             >
@@ -272,7 +272,7 @@ const Navbar: React.FC<Props> = ({
             <Button
               size="small"
               variant="contained"
-              startIcon={<DownloadRounded />}
+              startIcon={<UploadRounded />}
               onClick={onExportCanvas}
               sx={{ height: 32, borderRadius: "9px" }}
             >
