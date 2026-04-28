@@ -42,6 +42,16 @@ interface Props {
   onOpenDescription: (nodeId: string) => void;
 }
 
+interface SelectedNodeEditorProps {
+  selectedNode: StoryNode;
+  nodes: StoryNode[];
+  onUpdateNode: (nodeId: string, updates: Partial<StoryNode>) => void;
+  onAddChild: (label: string) => void;
+  onConnectTo: (targetId: string) => void;
+  onDeleteNode: () => void;
+  onOpenDescription: (nodeId: string) => void;
+}
+
 const colorPalette = [
   "#8b5cf6",
   "#6366f1",
@@ -53,7 +63,7 @@ const colorPalette = [
   "#14b8a6",
 ];
 
-const NodeEditor: React.FC<Props> = ({
+const SelectedNodeEditor: React.FC<SelectedNodeEditorProps> = ({
   selectedNode,
   nodes,
   onUpdateNode,
@@ -62,133 +72,38 @@ const NodeEditor: React.FC<Props> = ({
   onDeleteNode,
   onOpenDescription,
 }) => {
-  const [editLabel, setEditLabel] = useState<string>("");
-  const [editBadge, setEditBadge] = useState<string>("");
-  const [editDescription, setEditDescription] = useState<string>("");
+  const [editLabel, setEditLabel] = useState<string>(selectedNode.label ?? "");
+  const [editBadge, setEditBadge] = useState<string>(selectedNode.badge ?? "");
+  const [editDescription, setEditDescription] = useState<string>(
+    selectedNode.description ?? ""
+  );
   const [childLabel, setChildLabel] = useState<string>("");
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
-  React.useEffect(() => {
-    setEditLabel(selectedNode?.label ?? "");
-    setEditBadge(selectedNode?.badge ?? "");
-    setEditDescription(selectedNode?.description ?? "");
-  }, [selectedNode]);
 
   const handleSaveMeta = () => {
-    if (selectedNode) {
-      onUpdateNode(selectedNode.id, {
-        label: editLabel.trim() || "Untitled step",
-        badge: editBadge.trim(),
-      });
-    }
+    onUpdateNode(selectedNode.id, {
+      label: editLabel.trim() || "Untitled step",
+      badge: editBadge.trim(),
+    });
   };
 
   const handleSaveDescription = () => {
-    if (selectedNode) {
-      onUpdateNode(selectedNode.id, {
-        description: editDescription.trim(),
-      });
-    }
+    onUpdateNode(selectedNode.id, {
+      description: editDescription.trim(),
+    });
   };
 
   const handleAddChild = () => {
-    if (selectedNode) {
-      onAddChild(childLabel.trim() || "New step");
-      setChildLabel("");
-    }
+    onAddChild(childLabel.trim() || "New step");
+    setChildLabel("");
   };
 
   const handleConnectTo = () => {
-    if (
-      selectedNode &&
-      selectedTargetId &&
-      selectedNode.id !== selectedTargetId
-    ) {
+    if (selectedTargetId && selectedNode.id !== selectedTargetId) {
       onConnectTo(selectedTargetId);
       setSelectedTargetId("");
     }
   };
-
-  if (!selectedNode) {
-    return (
-      <Fade in={true}>
-        <Box sx={{ p: { xs: 2, md: 3 }, minWidth: 0, textAlign: "center" }}>
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              border: "1px solid",
-              borderColor: "divider",
-              bgcolor: "transparent",
-              minWidth: 0,
-            }}
-          >
-            <AccountTree
-              sx={{ fontSize: 64, color: "primary.main", mb: 2, opacity: 0.8 }}
-            />
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 800 }}>
-              Story control panel
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
-              Select a node on the canvas to manage its color, description, label, and connections.
-            </Typography>
-            <Divider sx={{ my: 3 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-              Available features
-            </Typography>
-            <Stack
-              spacing={1.25}
-              sx={{ textAlign: "left", fontSize: 13, color: "text.secondary" }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Chip
-                  label="Color"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Typography variant="body2">
-                  Pick a custom color for every node from a quick palette.
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Chip
-                  label="Details"
-                  size="small"
-                  color="secondary"
-                  variant="outlined"
-                />
-                <Typography variant="body2">
-                  Add a description and open it in a focused details view.
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Chip
-                  label="Label"
-                  size="small"
-                  color="info"
-                  variant="outlined"
-                />
-                <Typography variant="body2">
-                  Add short labels to organize each step.
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Chip
-                  label="Drag"
-                  size="small"
-                  color="warning"
-                  variant="outlined"
-                />
-                <Typography variant="body2">
-                  Drag nodes with smooth zoom and pan on the canvas.
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Box>
-      </Fade>
-    );
-  }
 
   const otherNodes = nodes.filter((n) => n.id !== selectedNode.id);
 
@@ -199,8 +114,11 @@ const NodeEditor: React.FC<Props> = ({
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1.5}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            sx={{ mb: 2.5, minWidth: 0 }}
+            sx={{
+              mb: 2.5,
+              minWidth: 0,
+              alignItems: { xs: "flex-start", sm: "center" },
+            }}
           >
             <Avatar
               sx={{
@@ -258,11 +176,7 @@ const NodeEditor: React.FC<Props> = ({
                     editBadge !== (selectedNode.badge ?? "")) &&
                   editLabel.trim() ? (
                     <Tooltip title="Save">
-                      <IconButton
-                        size="small"
-                        onClick={handleSaveMeta}
-                        edge="end"
-                      >
+                      <IconButton size="small" onClick={handleSaveMeta} edge="end">
                         <Edit fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -300,7 +214,11 @@ const NodeEditor: React.FC<Props> = ({
               mb: 3,
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ mb: 1.5, alignItems: "center" }}
+            >
               <PaletteOutlined sx={{ color: "primary.main" }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 Node color
@@ -325,9 +243,14 @@ const NodeEditor: React.FC<Props> = ({
                     bgcolor: color,
                     border: "2px solid",
                     borderColor:
-                      selectedNode.color === color ? "common.white" : "transparent",
+                      selectedNode.color === color
+                        ? "common.white"
+                        : "transparent",
                     boxShadow: `0 0 0 2px ${color}33`,
-                    "&:hover": { bgcolor: color, transform: "translateY(-2px)" },
+                    "&:hover": {
+                      bgcolor: color,
+                      transform: "translateY(-2px)",
+                    },
                   }}
                 />
               ))}
@@ -336,7 +259,9 @@ const NodeEditor: React.FC<Props> = ({
                 type="color"
                 aria-label="Pick node color"
                 value={selectedNode.color || "#6366f1"}
-                onChange={(e) => onUpdateNode(selectedNode.id, { color: e.target.value })}
+                onChange={(e) =>
+                  onUpdateNode(selectedNode.id, { color: e.target.value })
+                }
                 sx={{
                   width: "100%",
                   minWidth: 0,
@@ -399,7 +324,11 @@ const NodeEditor: React.FC<Props> = ({
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            sx={{ mb: 3 }}
+          >
             <TextField
               fullWidth
               placeholder="Next step name..."
@@ -425,7 +354,11 @@ const NodeEditor: React.FC<Props> = ({
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            sx={{ mb: 3 }}
+          >
             <FormControl fullWidth size="small">
               <InputLabel>Select target step</InputLabel>
               <Select
@@ -455,7 +388,8 @@ const NodeEditor: React.FC<Props> = ({
           </Stack>
 
           <Alert severity="info" sx={{ mb: 3, fontSize: 12, borderRadius: 3 }}>
-            <strong>Tip:</strong> Add a short label and a full description for each node to keep the canvas easier to scan.
+            <strong>Tip:</strong> Add a short label and a full description for
+            each node to keep the canvas easier to scan.
           </Alert>
 
           <Divider sx={{ my: 2 }} />
@@ -490,6 +424,112 @@ const NodeEditor: React.FC<Props> = ({
         </Box>
       </Box>
     </Fade>
+  );
+};
+
+const NodeEditor: React.FC<Props> = ({
+  selectedNode,
+  nodes,
+  onUpdateNode,
+  onAddChild,
+  onConnectTo,
+  onDeleteNode,
+  onOpenDescription,
+}) => {
+  if (!selectedNode) {
+    return (
+      <Fade in={true}>
+        <Box sx={{ p: { xs: 2, md: 3 }, minWidth: 0, textAlign: "center" }}>
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "transparent",
+              minWidth: 0,
+            }}
+          >
+            <AccountTree
+              sx={{ fontSize: 64, color: "primary.main", mb: 2, opacity: 0.8 }}
+            />
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 800 }}>
+              Story control panel
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+              Select a node on the canvas to manage its color, description,
+              label, and connections.
+            </Typography>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+              Available features
+            </Typography>
+            <Stack
+              spacing={1.25}
+              sx={{ textAlign: "left", fontSize: 13, color: "text.secondary" }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label="Color"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                <Typography variant="body2">
+                  Pick a custom color for every node from a quick palette.
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label="Details"
+                  size="small"
+                  color="secondary"
+                  variant="outlined"
+                />
+                <Typography variant="body2">
+                  Add a description and open it in a focused details view.
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label="Label"
+                  size="small"
+                  color="info"
+                  variant="outlined"
+                />
+                <Typography variant="body2">
+                  Add short labels to organize each step.
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label="Drag"
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                />
+                <Typography variant="body2">
+                  Drag nodes with smooth zoom and pan on the canvas.
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Box>
+      </Fade>
+    );
+  }
+
+  return (
+    <SelectedNodeEditor
+      key={selectedNode.id}
+      selectedNode={selectedNode}
+      nodes={nodes}
+      onUpdateNode={onUpdateNode}
+      onAddChild={onAddChild}
+      onConnectTo={onConnectTo}
+      onDeleteNode={onDeleteNode}
+      onOpenDescription={onOpenDescription}
+    />
   );
 };
 

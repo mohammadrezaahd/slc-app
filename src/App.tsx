@@ -172,11 +172,14 @@ const App: React.FC = () => {
     });
   }, []);
 
-  const updateNode = useCallback((nodeId: string, updates: Partial<StoryNode>) => {
-    setNodes((prev) =>
-      prev.map((n) => (n.id === nodeId ? { ...n, ...updates } : n)),
-    );
-  }, []);
+  const updateNode = useCallback(
+    (nodeId: string, updates: Partial<StoryNode>) => {
+      setNodes((prev) =>
+        prev.map((n) => (n.id === nodeId ? { ...n, ...updates } : n)),
+      );
+    },
+    [],
+  );
 
   const updateNodePosition = useCallback(
     (nodeId: string, x: number, y: number) => {
@@ -296,7 +299,8 @@ const App: React.FC = () => {
               xs: "auto minmax(0, 1fr)",
               lg: "1fr",
             },
-            transition: "grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+            transition:
+              "grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1)",
             gap: { xs: 1.5, md: 2.5 },
             flex: 1,
             minHeight: 0,
@@ -317,11 +321,17 @@ const App: React.FC = () => {
             }}
           >
             {/* collapse toggle — desktop only */}
-            <Tooltip title={isEditorCollapsed ? "Expand editor" : "Collapse editor"}>
+            <Tooltip
+              title={isEditorCollapsed ? "Expand editor" : "Collapse editor"}
+            >
               <IconButton
                 size="small"
                 onClick={() => setIsEditorCollapsed((prev) => !prev)}
-                aria-label={isEditorCollapsed ? "Expand node editor" : "Collapse node editor"}
+                aria-label={
+                  isEditorCollapsed
+                    ? "Expand node editor"
+                    : "Collapse node editor"
+                }
                 sx={{
                   display: { xs: "none", lg: "inline-flex" },
                   position: "absolute",
@@ -391,15 +401,15 @@ const App: React.FC = () => {
                   onConnectTo={(targetId) =>
                     selectedNodeId && addConnection(selectedNodeId, targetId)
                   }
-                  onDeleteNode={() => selectedNodeId && deleteNode(selectedNodeId)}
+                  onDeleteNode={() =>
+                    selectedNodeId && deleteNode(selectedNodeId)
+                  }
                   onOpenDescription={(nodeId) => setDetailNodeId(nodeId)}
                 />
               </Box>
             </Box>
 
             <Stack
-              alignItems="center"
-              justifyContent="center"
               spacing={1}
               sx={{
                 display: { xs: "none", lg: "flex" },
@@ -408,9 +418,13 @@ const App: React.FC = () => {
                 color: "text.secondary",
                 height: "100%",
                 opacity: isEditorCollapsed ? 1 : 0,
-                transform: isEditorCollapsed ? "translateX(0)" : "translateX(-10px)",
+                transform: isEditorCollapsed
+                  ? "translateX(0)"
+                  : "translateX(-10px)",
                 transition: "opacity 220ms ease, transform 260ms ease",
                 pointerEvents: isEditorCollapsed ? "auto" : "none",
+                justifyContent: "center",
+                alignItems: "center",
               }}
             >
               <Box
@@ -429,7 +443,11 @@ const App: React.FC = () => {
               </Box>
               <Typography
                 variant="caption"
-                sx={{ textAlign: "center", fontWeight: 700, letterSpacing: 0.3 }}
+                sx={{
+                  textAlign: "center",
+                  fontWeight: 700,
+                  letterSpacing: 0.3,
+                }}
               >
                 Edit
               </Typography>
@@ -467,11 +485,14 @@ const App: React.FC = () => {
               <DialogTitle sx={{ pb: 1.5 }}>
                 <Stack
                   direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
                   spacing={2}
+                  sx={{ alignItems: "center", justifyContent: "space-between" }}
                 >
-                  <Stack direction="row" spacing={1.25} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={1.25}
+                    sx={{ alignItems: "center" }}
+                  >
                     <Box
                       sx={{
                         width: 16,
