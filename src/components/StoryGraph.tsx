@@ -22,6 +22,7 @@ interface Props {
   connections: Connection[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  onNodeTap: (nodeId: string) => void;
   onUpdatePosition: (nodeId: string, x: number, y: number) => void;
   onOpenDescription: (nodeId: string) => void;
 }
@@ -102,11 +103,14 @@ const StoryGraph: React.FC<Props> = ({
   connections,
   selectedNodeId,
   onSelectNode,
+  onNodeTap,
   onUpdatePosition,
   onOpenDescription,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<Record<string, { x: number; y: number; time: number }>>({});
+  const didMoveRef = useRef<Record<string, boolean>>({});
   const zoomTransformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(
     null,
@@ -325,11 +329,21 @@ const StoryGraph: React.FC<Props> = ({
         .drag<SVGGElement, StoryNode>()
         .clickDistance(6)
         .on("start", (_event: D3DragEvent, d: StoryNode) => {
+          dragStartRef.current[d.id] = { x: d.x, y: d.y, time: Date.now() };
+          didMoveRef.current[d.id] = false;
           onSelectNode(d.id);
         })
         .on("drag", function (event: D3DragEvent, d: StoryNode) {
           const newX = event.x;
           const newY = event.y;
+
+          const start = dragStartRef.current[d.id];
+          if (start) {
+            const movedDistance = Math.hypot(newX - start.x, newY - start.y);
+            if (movedDistance > 8) {
+              didMoveRef.current[d.id] = true;
+            }
+          }
 
           d.x = newX;
           d.y = newY;
@@ -338,6 +352,17 @@ const StoryGraph: React.FC<Props> = ({
         })
         .on("end", (_event: D3DragEvent, d: StoryNode) => {
           onUpdatePosition(d.id, d.x, d.y);
+
+          const start = dragStartRef.current[d.id];
+          const didMove = didMoveRef.current[d.id];
+          const isQuickTap = start ? Date.now() - start.time < 280 : false;
+
+          if (!didMove && isQuickTap) {
+            onNodeTap(d.id);
+          }
+
+          delete dragStartRef.current[d.id];
+          delete didMoveRef.current[d.id];
         });
 
       nodeGroups.join(
@@ -543,6 +568,7 @@ const StoryGraph: React.FC<Props> = ({
     connections,
     selectedNodeId,
     onSelectNode,
+    onNodeTap,
     onUpdatePosition,
     onOpenDescription,
     theme,

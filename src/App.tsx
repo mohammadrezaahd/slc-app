@@ -215,6 +215,10 @@ const App: React.FC = () => {
 
   const handleSelectNode = useCallback((nodeId: string) => {
     setSelectedNodeId(nodeId);
+  }, []);
+
+  const handleNodeTap = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
     if (typeof window !== "undefined" && window.innerWidth < 1200) {
       openMobileEditor();
     }
@@ -487,6 +491,7 @@ const App: React.FC = () => {
               connections={connections}
               selectedNodeId={selectedNodeId}
               onSelectNode={handleSelectNode}
+              onNodeTap={handleNodeTap}
               onUpdatePosition={updateNodePosition}
               onOpenDescription={(nodeId) => setDetailNodeId(nodeId)}
             />
@@ -509,15 +514,36 @@ const App: React.FC = () => {
           slotProps={{
             paper: {
               sx: {
-                maxHeight: "78vh",
+                height: { xs: "56dvh", sm: "58dvh" },
+                maxHeight: { xs: "56dvh", sm: "58dvh" },
                 borderTopLeftRadius: 18,
                 borderTopRightRadius: 18,
                 backgroundImage: "none",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
               },
             },
           }}
         >
-          <DialogTitle sx={{ pb: 1.25 }}>
+          <Box
+            sx={{
+              display: "grid",
+              placeItems: "center",
+              pt: 1,
+              pb: 0.25,
+            }}
+          >
+            <Box
+              sx={{
+                width: 44,
+                height: 4,
+                borderRadius: 99,
+                bgcolor: "text.disabled",
+              }}
+            />
+          </Box>
+          <DialogTitle sx={{ pb: 1.25, pt: 0.5, flexShrink: 0 }}>
             <Stack
               direction="row"
               spacing={1.5}
@@ -529,12 +555,17 @@ const App: React.FC = () => {
                   Node settings
                 </Typography>
               </Stack>
-              <IconButton onClick={() => setIsMobileEditorOpen(false)}>
+              <IconButton
+                aria-label="Close node settings"
+                onClick={() => setIsMobileEditorOpen(false)}
+              >
                 <CloseRounded />
               </IconButton>
             </Stack>
           </DialogTitle>
-          <DialogContent sx={{ pt: "0 !important", px: 0, pb: 1 }}>
+          <DialogContent
+            sx={{ pt: "0 !important", px: 0, pb: 1, flex: 1, overflowY: "auto" }}
+          >
             <NodeEditor
               selectedNode={selectedNode}
               nodes={nodes}
