@@ -347,6 +347,14 @@ const StoryGraph: React.FC<Props> = ({
             .attr("class", "node")
             .attr("transform", (d: StoryNode) => `translate(${d.x}, ${d.y})`)
             .attr("cursor", "pointer")
+            .on("pointerdown", (event: PointerEvent, d: StoryNode) => {
+              event.stopPropagation();
+              onSelectNode(d.id);
+            })
+            .on("touchstart", (event: TouchEvent, d: StoryNode) => {
+              event.stopPropagation();
+              onSelectNode(d.id);
+            })
             .on("mousedown", (event: MouseEvent, d: StoryNode) => {
               event.stopPropagation();
               onSelectNode(d.id);
@@ -425,6 +433,14 @@ const StoryGraph: React.FC<Props> = ({
             .attr("class", "info-button")
             .attr("transform", `translate(${-nodeWidth / 2 + 24}, ${-nodeHeight / 2 + 24})`)
             .style("cursor", "pointer")
+            .on("pointerdown", (event: PointerEvent, d: StoryNode) => {
+              event.stopPropagation();
+              onOpenDescription(d.id);
+            })
+            .on("touchstart", (event: TouchEvent, d: StoryNode) => {
+              event.stopPropagation();
+              onOpenDescription(d.id);
+            })
             .on("click", (event: MouseEvent, d: StoryNode) => {
               event.stopPropagation();
               onOpenDescription(d.id);

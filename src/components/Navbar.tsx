@@ -19,6 +19,7 @@ import {
   HubOutlined,
   DownloadRounded,
   UploadRounded,
+  TuneRounded,
 } from "@mui/icons-material";
 
 interface Props {
@@ -28,6 +29,7 @@ interface Props {
   connectionsCount: number;
   onExportCanvas: () => void;
   onImportCanvas: (file: File) => void;
+  onOpenNodeSettings: () => void;
 }
 
 const Navbar: React.FC<Props> = ({
@@ -37,6 +39,7 @@ const Navbar: React.FC<Props> = ({
   connectionsCount,
   onExportCanvas,
   onImportCanvas,
+  onOpenNodeSettings,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -150,6 +153,11 @@ const Navbar: React.FC<Props> = ({
             <Tooltip title="Import canvas">
               <IconButton size="small" onClick={handleImportClick} sx={{ borderRadius: "8px" }}>
                 <UploadRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Node settings">
+              <IconButton size="small" onClick={onOpenNodeSettings} sx={{ borderRadius: "8px" }}>
+                <TuneRounded fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Export canvas">

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
   ThemeProvider,
   createTheme,
@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  Drawer,
   IconButton,
   Stack,
   Typography,
@@ -52,6 +53,7 @@ const isValidConnection = (value: unknown): value is Connection => {
 };
 
 const App: React.FC = () => {
+  const mobileEditorCloseGuardUntilRef = useRef<number>(0);
   const [mode, setMode] = useState<"light" | "dark">("dark");
   const [nodes, setNodes] = useState<StoryNode[]>([
     {
@@ -69,6 +71,7 @@ const App: React.FC = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [detailNodeId, setDetailNodeId] = useState<string | null>(null);
   const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
+  const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(false);
 
   const theme = useMemo(
     () =>
@@ -205,6 +208,18 @@ const App: React.FC = () => {
   const toggleTheme = () =>
     setMode((prev) => (prev === "light" ? "dark" : "light"));
 
+  const openMobileEditor = useCallback(() => {
+    mobileEditorCloseGuardUntilRef.current = Date.now() + 280;
+    setIsMobileEditorOpen(true);
+  }, []);
+
+  const handleSelectNode = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    if (typeof window !== "undefined" && window.innerWidth < 1200) {
+      openMobileEditor();
+    }
+  }, [openMobileEditor]);
+
   const handleExportCanvas = useCallback(() => {
     const snapshot: CanvasSnapshot = {
       version: 1,
@@ -270,7 +285,8 @@ const App: React.FC = () => {
         sx={{
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "100dvh",
+          minHeight: "100vh",
           overflow: "hidden",
           background:
             mode === "dark"
@@ -285,6 +301,7 @@ const App: React.FC = () => {
           connectionsCount={connections.length}
           onExportCanvas={handleExportCanvas}
           onImportCanvas={handleImportCanvas}
+          onOpenNodeSettings={openMobileEditor}
         />
         <Box
           sx={{
@@ -296,19 +313,20 @@ const App: React.FC = () => {
                 : "minmax(330px, 390px) minmax(0, 1fr)",
             },
             gridTemplateRows: {
-              xs: "auto minmax(0, 1fr)",
+              xs: "minmax(0, 1fr)",
               lg: "1fr",
             },
             transition:
               "grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1)",
-            gap: { xs: 1.5, md: 2.5 },
+            gap: { xs: 0, md: 2.5 },
             flex: 1,
             minHeight: 0,
-            p: { xs: 1, md: 2.5 },
+            p: { xs: 0, md: 2.5 },
           }}
         >
           <Box
             sx={{
+              display: { xs: "none", lg: "block" },
               minWidth: 0,
               minHeight: 0,
               overflow: "hidden",
@@ -457,9 +475,10 @@ const App: React.FC = () => {
             sx={{
               minWidth: 0,
               minHeight: 0,
+              height: "100%",
               position: "relative",
               bgcolor: "background.paper",
-              borderRadius: { xs: "14px", md: "18px" },
+              borderRadius: { xs: 0, md: "18px" },
               overflow: "hidden",
             }}
           >
@@ -467,12 +486,69 @@ const App: React.FC = () => {
               nodes={nodes}
               connections={connections}
               selectedNodeId={selectedNodeId}
-              onSelectNode={setSelectedNodeId}
+              onSelectNode={handleSelectNode}
               onUpdatePosition={updateNodePosition}
               onOpenDescription={(nodeId) => setDetailNodeId(nodeId)}
             />
           </Box>
         </Box>
+
+        <Drawer
+          anchor="bottom"
+          open={isMobileEditorOpen}
+          onClose={(_, reason) => {
+            if (
+              reason === "backdropClick" &&
+              Date.now() < mobileEditorCloseGuardUntilRef.current
+            ) {
+              return;
+            }
+            setIsMobileEditorOpen(false);
+          }}
+          sx={{ display: { xs: "block", lg: "none" } }}
+          slotProps={{
+            paper: {
+              sx: {
+                maxHeight: "78vh",
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+                backgroundImage: "none",
+              },
+            },
+          }}
+        >
+          <DialogTitle sx={{ pb: 1.25 }}>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: "center", justifyContent: "space-between" }}
+            >
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <TuneRounded color="primary" />
+                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                  Node settings
+                </Typography>
+              </Stack>
+              <IconButton onClick={() => setIsMobileEditorOpen(false)}>
+                <CloseRounded />
+              </IconButton>
+            </Stack>
+          </DialogTitle>
+          <DialogContent sx={{ pt: "0 !important", px: 0, pb: 1 }}>
+            <NodeEditor
+              selectedNode={selectedNode}
+              nodes={nodes}
+              onUpdateNode={updateNode}
+              onAddChild={(label) => selectedNodeId && addNode(selectedNodeId, label)}
+              onConnectTo={(targetId) => selectedNodeId && addConnection(selectedNodeId, targetId)}
+              onDeleteNode={() => selectedNodeId && deleteNode(selectedNodeId)}
+              onOpenDescription={(nodeId) => {
+                setDetailNodeId(nodeId);
+                setIsMobileEditorOpen(false);
+              }}
+            />
+          </DialogContent>
+        </Drawer>
 
         <Dialog
           open={Boolean(detailNode)}
