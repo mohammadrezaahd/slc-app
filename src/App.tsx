@@ -156,23 +156,43 @@ const App: React.FC = () => {
     [nodes, detailNodeId],
   );
 
-  const addNode = useCallback(
-    (parentId: string, label: string) => {
+  const createNodeId = useCallback(() => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return `node-${crypto.randomUUID()}`;
+    }
+
+    return `node-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }, []);
+
+  const addChildren = useCallback(
+    (parentId: string, labels: string[]) => {
       const parentNode = nodes.find((n) => n.id === parentId);
-      const newNode: StoryNode = {
-        id: `node-${Date.now()}`,
-        label: label || `Step ${nodes.length + 1}`,
-        badge: `Node ${nodes.length + 1}`,
-        description: "",
-        color: parentNode?.color || "#22c55e",
-        x: (parentNode?.x || 400) + 250,
-        y: (parentNode?.y || 300) + (Math.random() - 0.5) * 120,
-      };
-      setNodes((prev) => [...prev, newNode]);
-      setConnections((prev) => [...prev, { from: parentId, to: newNode.id }]);
-      setSelectedNodeId(newNode.id);
+      const cleanLabels = labels.map((label) => label.trim()).filter(Boolean);
+      const finalLabels = cleanLabels.length ? cleanLabels : ["New step"];
+      const startIndex = nodes.length + 1;
+
+      const newNodes: StoryNode[] = finalLabels.map((label, index) => {
+        const offsetIndex = index - (finalLabels.length - 1) / 2;
+
+        return {
+          id: createNodeId(),
+          label: label || `Step ${startIndex + index}`,
+          badge: `Node ${startIndex + index}`,
+          description: "",
+          color: parentNode?.color || "#22c55e",
+          x: (parentNode?.x || 400) + 250,
+          y: (parentNode?.y || 300) + offsetIndex * 120,
+        };
+      });
+
+      setNodes((prev) => [...prev, ...newNodes]);
+      setConnections((prev) => [
+        ...prev,
+        ...newNodes.map((node) => ({ from: parentId, to: node.id })),
+      ]);
+      setSelectedNodeId(newNodes[newNodes.length - 1].id);
     },
-    [nodes],
+    [createNodeId, nodes],
   );
 
   const addConnection = useCallback((fromId: string, toId: string) => {
@@ -441,8 +461,8 @@ const App: React.FC = () => {
                   selectedNode={selectedNode}
                   nodes={nodes}
                   onUpdateNode={updateNode}
-                  onAddChild={(label) =>
-                    selectedNodeId && addNode(selectedNodeId, label)
+                  onAddChildren={(labels) =>
+                    selectedNodeId && addChildren(selectedNodeId, labels)
                   }
                   onConnectTo={(targetId) =>
                     selectedNodeId && addConnection(selectedNodeId, targetId)
@@ -642,7 +662,9 @@ const App: React.FC = () => {
               selectedNode={selectedNode}
               nodes={nodes}
               onUpdateNode={updateNode}
-              onAddChild={(label) => selectedNodeId && addNode(selectedNodeId, label)}
+              onAddChildren={(labels) =>
+                selectedNodeId && addChildren(selectedNodeId, labels)
+              }
               onConnectTo={(targetId) => selectedNodeId && addConnection(selectedNodeId, targetId)}
               onDeleteNode={() => selectedNodeId && deleteNode(selectedNodeId)}
               onOpenDescription={(nodeId) => {

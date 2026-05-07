@@ -36,7 +36,7 @@ interface Props {
   selectedNode: StoryNode | null;
   nodes: StoryNode[];
   onUpdateNode: (nodeId: string, updates: Partial<StoryNode>) => void;
-  onAddChild: (label: string) => void;
+  onAddChildren: (labels: string[]) => void;
   onConnectTo: (targetId: string) => void;
   onDeleteNode: () => void;
   onOpenDescription: (nodeId: string) => void;
@@ -46,7 +46,7 @@ interface SelectedNodeEditorProps {
   selectedNode: StoryNode;
   nodes: StoryNode[];
   onUpdateNode: (nodeId: string, updates: Partial<StoryNode>) => void;
-  onAddChild: (label: string) => void;
+  onAddChildren: (labels: string[]) => void;
   onConnectTo: (targetId: string) => void;
   onDeleteNode: () => void;
   onOpenDescription: (nodeId: string) => void;
@@ -67,7 +67,7 @@ const SelectedNodeEditor: React.FC<SelectedNodeEditorProps> = ({
   selectedNode,
   nodes,
   onUpdateNode,
-  onAddChild,
+  onAddChildren,
   onConnectTo,
   onDeleteNode,
   onOpenDescription,
@@ -77,7 +77,7 @@ const SelectedNodeEditor: React.FC<SelectedNodeEditorProps> = ({
   const [editDescription, setEditDescription] = useState<string>(
     selectedNode.description ?? ""
   );
-  const [childLabel, setChildLabel] = useState<string>("");
+  const [childInputs, setChildInputs] = useState<string[]>([""]);
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
 
   const handleSaveMeta = () => {
@@ -93,9 +93,27 @@ const SelectedNodeEditor: React.FC<SelectedNodeEditorProps> = ({
     });
   };
 
-  const handleAddChild = () => {
-    onAddChild(childLabel.trim() || "New step");
-    setChildLabel("");
+  const handleChildInputChange = (index: number, value: string) => {
+    setChildInputs((prev) =>
+      prev.map((item, itemIndex) => (itemIndex === index ? value : item))
+    );
+  };
+
+  const handleAddChildInput = () => {
+    setChildInputs((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveChildInput = (index: number) => {
+    setChildInputs((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, itemIndex) => itemIndex !== index);
+    });
+  };
+
+  const handleCreateAllChildren = () => {
+    const labels = childInputs.map((item) => item.trim()).filter(Boolean);
+    onAddChildren(labels.length ? labels : ["New step"]);
+    setChildInputs([""]);
   };
 
   const handleConnectTo = () => {
@@ -325,25 +343,42 @@ const SelectedNodeEditor: React.FC<SelectedNodeEditorProps> = ({
           </Box>
 
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction="column"
             spacing={1}
             sx={{ mb: 3 }}
           >
-            <TextField
-              fullWidth
-              placeholder="Next step name..."
-              value={childLabel}
-              onChange={(e) => setChildLabel(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddChild()}
-            />
+            {childInputs.map((value, index) => (
+              <Stack key={`child-input-${index}`} direction="row" spacing={1}>
+                <TextField
+                  fullWidth
+                  placeholder={`Step title ${index + 1}`}
+                  value={value}
+                  onChange={(e) => handleChildInputChange(index, e.target.value)}
+                />
+                <IconButton
+                  aria-label={`Remove step title ${index + 1}`}
+                  onClick={() => handleRemoveChildInput(index)}
+                  disabled={childInputs.length === 1}
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </Stack>
+            ))}
+            <Button
+              variant="outlined"
+              onClick={handleAddChildInput}
+              startIcon={<Add />}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              Add new
+            </Button>
             <Button
               variant="contained"
-              onClick={handleAddChild}
+              onClick={handleCreateAllChildren}
               startIcon={<Add />}
-              sx={{ whiteSpace: "nowrap" }}
               fullWidth
             >
-              Create
+              Create all
             </Button>
           </Stack>
 
@@ -431,7 +466,7 @@ const NodeEditor: React.FC<Props> = ({
   selectedNode,
   nodes,
   onUpdateNode,
-  onAddChild,
+  onAddChildren,
   onConnectTo,
   onDeleteNode,
   onOpenDescription,
@@ -525,7 +560,7 @@ const NodeEditor: React.FC<Props> = ({
       selectedNode={selectedNode}
       nodes={nodes}
       onUpdateNode={onUpdateNode}
-      onAddChild={onAddChild}
+      onAddChildren={onAddChildren}
       onConnectTo={onConnectTo}
       onDeleteNode={onDeleteNode}
       onOpenDescription={onOpenDescription}
